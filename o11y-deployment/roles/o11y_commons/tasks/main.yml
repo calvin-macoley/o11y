@@ -1,0 +1,6 @@
+---
+
+- name:  "Commons | The action {{ o11y_commons__actions }} is launched for o11y-commons"
+  ansible.builtin.include_tasks:
+    file: "{{ o11y_commons__actions }}.yml"
+  when: o11y_commons__actions is defined

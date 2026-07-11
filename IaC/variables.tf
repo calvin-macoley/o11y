@@ -25,13 +25,7 @@ variable "gateway" {
   default     = "192.168.1.1"
 }
 
-variable "is_nesting" {
-  type        = bool
-  description = "Container allow nesting or not"
-  default     = false
-}
-
-variable "containers" {
+variable "vms" {
   type = map(object({
     deployment_node = string
     memory          = number
@@ -40,7 +34,8 @@ variable "containers" {
     network = object({
       address = string
       prefix  = string
-    })
+    }),
+    file_name = string
   }))
   default = {}
 }

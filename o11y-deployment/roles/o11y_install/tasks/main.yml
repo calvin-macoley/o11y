@@ -1,0 +1,6 @@
+---
+
+- name:  "Install | The action {{ o11y_install__actions }} is launched for o11y"
+  ansible.builtin.include_tasks:
+    file: "{{ o11y_install__actions }}.yml"
+  when: o11y_install__actions is defined
