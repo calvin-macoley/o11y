@@ -1,0 +1,4 @@
+---
+
+- import_playbook: o11y-commons.yml
+- import_playbook: o11y-install.yml
