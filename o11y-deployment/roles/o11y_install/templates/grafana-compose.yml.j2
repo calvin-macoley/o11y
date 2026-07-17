@@ -1,1 +1,15 @@
 ---
+
+services:
+  {{ o11y__grafana_config_install.name }}:
+    image: {{ o11y__grafana_config_install.image_url }}
+    container_name: {{ o11y__grafana_config_install.name }}
+    restart: unless-stopped
+    # if you are running as root then set it to 0
+    # else find the right id with the id -u command
+    user: '0'
+    ports:
+      - '{{ o11y__grafana_config_install.container_port }}:{{ o11y__grafana_config_install.container_port }}'
+    # adding the mount volume point which we create earlier
+    volumes:
+      - '$PWD/data:/var/lib/grafana'

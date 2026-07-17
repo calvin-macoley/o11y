@@ -1,0 +1,25 @@
+---
+
+project_name: "o11y"
+
+grafana__config:
+  name: "grafana"
+  tag: "nightly"
+  image_url: "docker.io/grafana/grafana-enterprise:nightly"
+  container_port: "3000"
+  volume_path: "/var/lib/grafana"
+
+mimir__config:
+  name: "mimir"
+  tag: "3.1.3"
+  image_url: "docker.io/grafana/mimir:3.1.3"
+  container_port: ""
+  volume_path: ""
+
+o11y__user:
+  name: "o11y"
+  uid: "151"
+  append: true
+  shell: "/bin/bash"
+  home: "/home/o11y"
+  mode_dir: "0755"

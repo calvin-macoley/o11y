@@ -1,1 +1,45 @@
 ---
+- name:  "Install | Podman is being installed"
+  become: true
+  ansible.builtin.apt:
+    name:
+      - podman
+    state: present
+    update_cache: yes
+
+- name: "Install | o11y user is being created"
+  ansible.builtin.user:
+    name: "{{ o11y__user_podman.name }}"
+    uid: "{{ o11y__user_podman.uid }}"
+    append: "{{ o11y__user_podman.append }}"
+    shell: "{{ o11y__user_podman.shell }}"
+    home: "{{ o11y__user_podman.home }}"
+
+# Required for rootless Podman to set up the user namespaces
+- name: "Install | Add user subuid and subgid"
+  deamen.podman.manage_subuid_subgid:
+    username: "{{ o11y__user_podman.name }}"
+    range_size: 100000
+
+# If you want to use the rootless, you need to enable the linger for the runner user 
+- name: "Install | Linger is enabled for runner user"
+  ansible.builtin.command:
+    cmd: "loginctl enable-linger {{ o11y__user_podman.name }}"
+  become: true
+  changed_when: false
+
+- name: "Install | Podman user namespace is initialized"
+  ansible.builtin.command:
+    cmd: "podman system migrate"
+  become: true
+  become_user: "{{ o11y__user_podman.name }}"
+  changed_when: false
+
+- name: "Install | Podman user socket is enabled for runner"
+  ansible.builtin.systemd_service:
+    name: podman.socket
+    scope: user
+    enabled: true
+    state: started
+  become: true
+  become_user: "{{ o11y__user_podman.name }}"
