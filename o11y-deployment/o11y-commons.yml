@@ -11,3 +11,5 @@
         o11y_commons__actions: "{{ item }}"
       loop:
         - utilities
+        - users
+        - directories

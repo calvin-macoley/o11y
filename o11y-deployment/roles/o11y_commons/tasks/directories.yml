@@ -1,0 +1,28 @@
+---
+
+- name: "Commons | Compose directories are being created"
+  ansible.builtin.file:
+    path: "{{ directory }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ o11y__user_commons.name }}"
+    group: "{{ o11y__user_commons.name }}"
+  loop:
+    - "{{ o11y__grafana_config_commons.compose_folder }}"
+    - "{{ o11y__mimir_config_commons.compose_folder }}"
+  loop_control:
+    loop_var: directory
+
+- name: "Commons | Data directories are being created"
+  ansible.builtin.file:
+    path: "{{ directory }}"
+    state: directory
+    mode: '0750'
+    owner: "{{ o11y__user_commons.name }}"
+    group: "{{ o11y__user_commons.name }}"
+  loop:
+    - "{{ o11y__user_commons.home }}/data"
+    - "{{ o11y__grafana_config_commons.data_folder }}"
+    - "{{ o11y__mimir_config_commons.data_folder }}"
+  loop_control:
+    loop_var: directory

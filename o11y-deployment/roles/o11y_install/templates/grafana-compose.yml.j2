@@ -12,4 +12,4 @@ services:
       - '{{ o11y__grafana_config_install.container_port }}:{{ o11y__grafana_config_install.container_port }}'
     # adding the mount volume point which we create earlier
     volumes:
-      - '$PWD/data:/var/lib/grafana'
+      - '{{ o11y__grafana_config_install.data_folder }}:{{ o11y__grafana_config_install.volume_path }}'

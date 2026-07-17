@@ -1,1 +1,6 @@
 ---
+
+- name:  "Install | Mimir compose is set up"
+  ansible.builtin.template:
+    src: "{{ o11y__mimir_config_install.name }}-compose.yml.j2"
+    dest: "{{ o11y__grafana_config_install.compose_folder }}/{{ o11y__mimir_config_install.name }}-compose.yml"
