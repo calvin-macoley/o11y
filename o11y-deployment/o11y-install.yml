@@ -11,6 +11,6 @@
         o11y_install__actions: "{{ item }}"
       loop:
         - podman
-        #- mimir
+        - mimir
         #- clickhouse
         - grafana

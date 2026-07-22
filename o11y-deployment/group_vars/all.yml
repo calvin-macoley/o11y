@@ -37,7 +37,7 @@ minio__config:
 nginx__config:
   name: "load-balancer"
   tag: "stable-trixie"
-  image_url: "docker.io/nginx/nginx:stable-trixie"
+  image_url: "docker.io/library/nginx:stable-trixie"
   container_port: "9009"
   data_folder: "{{ o11y__user.home }}/data/nginx"
   volume_path: "/etc/nginx"

@@ -89,4 +89,62 @@ All other values are picked up automatically from `tofu.auto.tfvars`.
 ## Deployment (`o11y-deployment/`)
 
 Ansible playbooks that install and configure the observability stack on the
-provisioned VM. See the playbooks in [`o11y-deployment/`](o11y-deployment).
+provisioned VM. Everything runs as rootless [Podman](https://podman.io/)
+containers under a dedicated `o11y` user, orchestrated with `podman-compose`.
+
+### What gets installed
+
+- **Podman** (`podman` + `podman-compose`), configured for **rootless** use:
+  sub-uid/sub-gid ranges, lingering enabled for the `o11y` user, and the
+  per-user Podman socket started.
+- **Grafana** — a single `grafana-enterprise` container.
+- **Mimir** — a highly-available cluster: three `mimir` replicas that gossip
+  over memberlist, fronted by an **nginx** load balancer (`:9009`) and backed
+  by **MinIO** as the S3-compatible object store. Configuration is templated
+  into `~/compose_files/config/` (`mimir.yaml`, `nginx.conf`,
+  `alertmanager-fallback-config.yaml`) before the stack is brought up.
+- _ClickHouse_ is scaffolded but currently disabled in the install playbook.
+
+### Layout
+
+| Path | Purpose |
+|---|---|
+| `o11y-deployment/inventory/hosts` | Target hosts (the `o11y` VM at `192.168.1.8`) |
+| `o11y-deployment/group_vars/all.yml` | Per-service config (image, tag, ports, data/compose folders) |
+| `o11y-deployment/o11y-commons.yml` | Playbook: base setup (utilities, `o11y` user, directories) |
+| `o11y-deployment/o11y-install.yml` | Playbook: install Podman, Mimir and Grafana |
+| `o11y-deployment/o11y-full-install.yml` | Playbook: runs commons then install, end to end |
+| `o11y-deployment/roles/o11y_commons/` | Role: creates the `o11y` user and compose/data directories |
+| `o11y-deployment/roles/o11y_install/` | Role: installs Podman and templates/starts the compose stacks |
+
+Each role dispatches on an `*_actions` variable, looping over ordered task
+files (e.g. `utilities` → `users` → `directories`, then `podman` → `mimir` →
+`grafana`) so steps run in a deterministic order.
+
+### Prerequisites
+
+- [Ansible](https://www.ansible.com/) installed on the control machine
+- The `daemen.podman` collection: `ansible-galaxy collection install -r requirements.yml`
+- SSH access to the target VM as the `ansible` user, with the private key at
+  `o11y-deployment/secrets/o11y` (referenced from the inventory)
+
+### Usage
+
+```sh
+cd o11y-deployment
+ansible-galaxy collection install -r requirements.yml
+ansible-playbook o11y-full-install.yml
+```
+
+Grafana is then reachable on `:3000` and the Mimir write/read endpoint (behind
+the nginx load balancer) on `:9009` of the VM.
+
+### Notes
+
+- The stack is derived from Grafana's
+  [Play with Grafana Mimir](https://grafana.com/docs/mimir/latest/get-started/play-with-grafana-mimir/)
+  example and is **not production-hardened**.
+- The MinIO credentials are currently hardcoded (`MINIO_ROOT_PASSWORD=supersecret`,
+  and the matching `secret_access_key` in `mimir.yaml`). For anything beyond a
+  homelab demo these should be moved into an `ansible-vault`–encrypted variable
+  so the compose file and Mimir config stay in sync.

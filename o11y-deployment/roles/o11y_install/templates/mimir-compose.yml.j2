@@ -1,61 +1,51 @@
 version: "3.4"
 services:
-  minio:
-    image: minio/minio
+  {{ o11y__minio_config_install.name }}:
+    image: {{ o11y__minio_config_install.image_url }}
     entrypoint: [""]
-    command: ["sh", "-c", "mkdir -p /data/mimir && minio server --quiet /data"]
+    command: ["sh", "-c", "mkdir -p {{ o11y__minio_config_install.volume_path }}/{{ o11y__mimir_config_install.name }} && minio server --quiet {{ o11y__minio_config_install.volume_path }}"]
     environment:
-      - MINIO_ROOT_USER=mimir
+      - MINIO_ROOT_USER={{ o11y__mimir_config_install.name }}
       - MINIO_ROOT_PASSWORD=supersecret
     volumes:
-      - minio-data:/data
+      - {{ o11y__minio_config_install.name }}-data:{{ o11y__minio_config_install.volume_path }}
 
-  load-balancer:
-    image: nginx:latest
+  {{ o11y__mimir_config_install.name }}-1:
+    image: {{ o11y__mimir_config_install.image_url }}
+    command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
+    hostname: {{ o11y__mimir_config_install.name }}-1
     volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - "mimir-1"
-      - "mimir-2"
-      - "mimir-3"
+      - ./config/{{ o11y__mimir_config_install.name }}.yaml:/etc/{{ o11y__mimir_config_install.name }}.yaml
+      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+      - {{ o11y__mimir_config_install.name }}-1-data:{{ o11y__mimir_config_install.volume_path }}
+
+  {{ o11y__mimir_config_install.name }}-2:
+    image: {{ o11y__mimir_config_install.image_url }}
+    command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
+    hostname: {{ o11y__mimir_config_install.name }}-2
+    volumes:
+      - ./config/{{ o11y__mimir_config_install.name }}.yaml:/etc/{{ o11y__mimir_config_install.name }}.yaml
+      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+      - {{ o11y__mimir_config_install.name }}-2-data:{{ o11y__mimir_config_install.volume_path }}
+
+  {{ o11y__mimir_config_install.name }}-3:
+    image: {{ o11y__mimir_config_install.image_url }}
+    command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
+    hostname: {{ o11y__mimir_config_install.name }}-3
+    volumes:
+      - ./config/{{ o11y__mimir_config_install.name }}.yaml:/etc/{{ o11y__mimir_config_install.name }}.yaml
+      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+      - {{ o11y__mimir_config_install.name }}-3-data:{{ o11y__mimir_config_install.volume_path }}
+
+  {{ o11y__nginx_config_install.name }}:
+    image: {{ o11y__nginx_config_install.image_url }}
+    volumes:
+      - ./config/nginx.conf:{{ o11y__nginx_config_install.volume_path }}/nginx.conf:ro
     ports:
-      - 9009:9009
-
-  mimir-1:
-    image: grafana/mimir:latest
-    command: ["-config.file=/etc/mimir.yaml"]
-    hostname: mimir-1
-    depends_on:
-      - minio
-    volumes:
-      - ./config/mimir.yaml:/etc/mimir.yaml
-      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
-      - mimir-1-data:/data
-
-  mimir-2:
-    image: grafana/mimir:latest
-    command: ["-config.file=/etc/mimir.yaml"]
-    hostname: mimir-2
-    depends_on:
-      - minio
-    volumes:
-      - ./config/mimir.yaml:/etc/mimir.yaml
-      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
-      - mimir-2-data:/data
-
-  mimir-3:
-    image: grafana/mimir:latest
-    command: ["-config.file=/etc/mimir.yaml"]
-    hostname: mimir-3
-    depends_on:
-      - minio
-    volumes:
-      - ./config/mimir.yaml:/etc/mimir.yaml
-      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
-      - mimir-3-data:/data
+      - {{ o11y__nginx_config_install.container_port }}:{{ o11y__nginx_config_install.container_port }}
 
 volumes:
-  mimir-1-data:
-  mimir-2-data:
-  mimir-3-data:
-  minio-data:
+  {{ o11y__mimir_config_install.name }}-1-data:
+  {{ o11y__mimir_config_install.name }}-2-data:
+  {{ o11y__mimir_config_install.name }}-3-data:
+  {{ o11y__minio_config_install.name }}-data:

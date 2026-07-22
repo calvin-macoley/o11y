@@ -1,9 +1,26 @@
 ---
 
+- name: "Install | Mimir config directory exists"
+  ansible.builtin.file:
+    path: "{{ o11y__mimir_config_install.compose_folder }}/config"
+    state: directory
+    owner: "{{ o11y__user_podman_install.name }}"
+    mode: "0755"
+
+- name: "Install | Mimir config files are set up"
+  ansible.builtin.template:
+    src: "config/{{ item }}.j2"
+    dest: "{{ o11y__mimir_config_install.compose_folder }}/config/{{ item }}"
+    owner: "{{ o11y__user_podman_install.name }}"
+  loop:
+    - "{{ o11y__mimir_config_install.name }}.yaml"
+    - "nginx.conf"
+    - "alertmanager-fallback-config.yaml"
+
 - name:  "Install | Mimir compose is set up"
   ansible.builtin.template:
     src: "{{ o11y__mimir_config_install.name }}-compose.yml.j2"
-    dest: "{{ o11y__grafana_config_install.compose_folder }}/{{ o11y__mimir_config_install.name }}-compose.yml"
+    dest: "{{ o11y__mimir_config_install.compose_folder }}/{{ o11y__mimir_config_install.name }}-compose.yml"
     owner: "{{ o11y__user_podman_install.name }}"
 
 - name: "Install | Mimir compose is up"
