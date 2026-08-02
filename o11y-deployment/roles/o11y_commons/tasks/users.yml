@@ -1,0 +1,9 @@
+---
+
+- name: "Commons | o11y user is being created"
+  ansible.builtin.user:
+    name: "{{ o11y__user_commons.name }}"
+    uid: "{{ o11y__user_commons.uid }}"
+    append: "{{ o11y__user_commons.append }}"
+    shell: "{{ o11y__user_commons.shell }}"
+    home: "{{ o11y__user_commons.home }}"

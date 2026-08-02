@@ -1,0 +1,15 @@
+---
+
+- name:  The release commons are installed
+  hosts: all
+  become: true
+  tasks:
+    - name:  Common role tasks are being played
+      ansible.builtin.include_role:
+        name:  o11y_commons
+      vars:
+        o11y_commons__actions: "{{ item }}"
+      loop:
+        - utilities
+        - users
+        - directories

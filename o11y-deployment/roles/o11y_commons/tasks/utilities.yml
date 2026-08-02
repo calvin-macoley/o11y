@@ -1,0 +1,13 @@
+---
+
+- name: "Commons | Utilities tools are being installed"
+  become: true
+  apt:
+    name:
+      - vim
+      - git
+      - curl
+      - wget
+      - jq
+    state: present
+    update_cache: yes

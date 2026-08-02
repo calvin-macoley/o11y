@@ -1,0 +1,51 @@
+version: "3.4"
+services:
+  {{ o11y__minio_config_install.name }}:
+    image: {{ o11y__minio_config_install.image_url }}
+    entrypoint: [""]
+    command: ["sh", "-c", "mkdir -p {{ o11y__minio_config_install.volume_path }}/{{ o11y__mimir_config_install.name }} && minio server --quiet {{ o11y__minio_config_install.volume_path }}"]
+    environment:
+      - MINIO_ROOT_USER={{ o11y__mimir_config_install.name }}
+      - MINIO_ROOT_PASSWORD=supersecret
+    volumes:
+      - {{ o11y__minio_config_install.name }}-data:{{ o11y__minio_config_install.volume_path }}
+
+  {{ o11y__mimir_config_install.name }}-1:
+    image: {{ o11y__mimir_config_install.image_url }}
+    command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
+    hostname: {{ o11y__mimir_config_install.name }}-1
+    volumes:
+      - ./config/{{ o11y__mimir_config_install.name }}.yaml:/etc/{{ o11y__mimir_config_install.name }}.yaml
+      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+      - {{ o11y__mimir_config_install.name }}-1-data:{{ o11y__mimir_config_install.volume_path }}
+
+  {{ o11y__mimir_config_install.name }}-2:
+    image: {{ o11y__mimir_config_install.image_url }}
+    command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
+    hostname: {{ o11y__mimir_config_install.name }}-2
+    volumes:
+      - ./config/{{ o11y__mimir_config_install.name }}.yaml:/etc/{{ o11y__mimir_config_install.name }}.yaml
+      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+      - {{ o11y__mimir_config_install.name }}-2-data:{{ o11y__mimir_config_install.volume_path }}
+
+  {{ o11y__mimir_config_install.name }}-3:
+    image: {{ o11y__mimir_config_install.image_url }}
+    command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
+    hostname: {{ o11y__mimir_config_install.name }}-3
+    volumes:
+      - ./config/{{ o11y__mimir_config_install.name }}.yaml:/etc/{{ o11y__mimir_config_install.name }}.yaml
+      - ./config/alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+      - {{ o11y__mimir_config_install.name }}-3-data:{{ o11y__mimir_config_install.volume_path }}
+
+  {{ o11y__nginx_config_install.name }}:
+    image: {{ o11y__nginx_config_install.image_url }}
+    volumes:
+      - ./config/nginx.conf:{{ o11y__nginx_config_install.volume_path }}/nginx.conf:ro
+    ports:
+      - {{ o11y__nginx_config_install.container_port }}:{{ o11y__nginx_config_install.container_port }}
+
+volumes:
+  {{ o11y__mimir_config_install.name }}-1-data:
+  {{ o11y__mimir_config_install.name }}-2-data:
+  {{ o11y__mimir_config_install.name }}-3-data:
+  {{ o11y__minio_config_install.name }}-data:

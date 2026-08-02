@@ -1,0 +1,16 @@
+---
+
+- name:  Mimir and Grafana are installed
+  hosts: all
+  become: true
+  tasks:
+    - name:  Mimir and Grafana are installed
+      ansible.builtin.include_role:
+        name:  o11y_install
+      vars:
+        o11y_install__actions: "{{ item }}"
+      loop:
+        - podman
+        - mimir
+        #- clickhouse
+        - grafana

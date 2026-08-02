@@ -1,0 +1,11 @@
+---
+
+- name:  "Install | Grafana compose is set up"
+  ansible.builtin.template:
+    src: "{{ o11y__grafana_config_install.name }}-compose.yml.j2"
+    dest: "{{ o11y__grafana_config_install.compose_folder }}/{{ o11y__grafana_config_install.name }}-compose.yml"
+    owner: "{{ o11y__user_podman_install.name }}"
+
+- name: "Install | Grafana compose is up"
+  ansible.builtin.shell: podman-compose -f {{ o11y__grafana_config_install.compose_folder }}/{{ o11y__grafana_config_install.name }}-compose.yml up -d
+  become_user: "{{ o11y__user_podman_install.name }}"
