@@ -1,0 +1,42 @@
+# Do not use this configuration in production.
+# It is for demonstration purposes only.
+server:
+  http_listen_port: {{ o11y__tempo_config_install.container_port }}
+  log_level: info
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:{{ o11y__tempo_config_install.otlp_http_port }}
+        grpc:
+          endpoint: 0.0.0.0:{{ o11y__tempo_config_install.otlp_grpc_port }}
+
+ingester:
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 1h
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: {{ o11y__tempo_config_install.volume_path }}/wal
+    local:
+      path: {{ o11y__tempo_config_install.volume_path }}/blocks
+
+# enables TraceQL metrics queries (rate(), quantile_over_time(), ...) by
+# generating them on-the-fly from recent traces, without an external Prometheus
+metrics_generator:
+  storage:
+    path: {{ o11y__tempo_config_install.volume_path }}/generator/wal
+  traces_storage:
+    path: {{ o11y__tempo_config_install.volume_path }}/generator/traces
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [local-blocks]

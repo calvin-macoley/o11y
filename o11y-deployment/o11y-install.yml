@@ -13,4 +13,6 @@
         - podman
         - mimir
         #- clickhouse
+        - tempo
+        - loki
         - grafana

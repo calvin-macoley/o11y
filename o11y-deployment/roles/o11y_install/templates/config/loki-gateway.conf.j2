@@ -1,0 +1,55 @@
+user  nginx;
+worker_processes  5;
+
+events {
+  worker_connections   1000;
+}
+
+http {
+  # deliberately no "resolver" directive: proxy_pass targets below are plain
+  # literals (no variables), so nginx resolves each hostname once at startup
+  # and caches it instead of re-resolving per request. Appending $request_uri
+  # to proxy_pass turns it into a variable, which forces nginx onto the
+  # per-request resolver path instead -- and this network's DNS actually
+  # lives at the podman bridge gateway (10.89.x.1), not at 127.0.0.11, so
+  # that path fails outright with "502 Bad Gateway" / "no resolver defined".
+  # Omitting the URI from proxy_pass passes the original request URI through
+  # unmodified anyway, so nothing is lost by dropping $request_uri.
+
+  server {
+    listen             3100;
+
+    location = / {
+      return 200 'OK';
+      auth_basic off;
+    }
+
+    location = /api/prom/push {
+      proxy_pass       http://write:3100;
+    }
+
+    location = /api/prom/tail {
+      proxy_pass       http://read:3100;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    }
+
+    location ~ /api/prom/.* {
+      proxy_pass       http://read:3100;
+    }
+
+    location = /loki/api/v1/push {
+      proxy_pass       http://write:3100;
+    }
+
+    location = /loki/api/v1/tail {
+      proxy_pass       http://read:3100;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    }
+
+    location ~ /loki/api/.* {
+      proxy_pass       http://read:3100;
+    }
+  }
+}

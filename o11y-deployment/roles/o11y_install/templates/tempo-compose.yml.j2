@@ -1,0 +1,28 @@
+---
+services:
+  {{ o11y__tempo_config_install.name }}:
+    image: {{ o11y__tempo_config_install.image_url }}
+    command: "-target=all -config.file=/etc/{{ o11y__tempo_config_install.name }}.yaml"
+    restart: always
+    volumes:
+      - ./config/{{ o11y__tempo_config_install.name }}.yaml:/etc/{{ o11y__tempo_config_install.name }}.yaml
+      - {{ o11y__tempo_config_install.name }}-data:{{ o11y__tempo_config_install.volume_path }}
+    ports:
+      - "{{ o11y__tempo_config_install.container_port }}:{{ o11y__tempo_config_install.container_port }}" # tempo
+      - "{{ o11y__tempo_config_install.otlp_grpc_port }}:{{ o11y__tempo_config_install.otlp_grpc_port }}" # tempo OTLP GRPC
+      - "{{ o11y__tempo_config_install.otlp_http_port }}:{{ o11y__tempo_config_install.otlp_http_port }}" # tempo OTLP HTTP
+
+  vulture:
+    image: "docker.io/grafana/tempo-vulture:{{ o11y__tempo_config_install.tag }}"
+    restart: always
+    command:
+      [
+        "-prometheus-listen-address=:8080",
+        "-tempo-query-url=http://{{ o11y__tempo_config_install.name }}:{{ o11y__tempo_config_install.container_port }}",
+        "-tempo-push-url=http://{{ o11y__tempo_config_install.name }}:{{ o11y__tempo_config_install.otlp_grpc_port }}",
+      ]
+    depends_on:
+      - {{ o11y__tempo_config_install.name }}
+
+volumes:
+  {{ o11y__tempo_config_install.name }}-data:

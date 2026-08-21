@@ -1,0 +1,24 @@
+---
+
+- name: "Install | Tempo config directory exists"
+  ansible.builtin.file:
+    path: "{{ o11y__tempo_config_install.compose_folder }}/config"
+    state: directory
+    owner: "{{ o11y__user_podman_install.name }}"
+    mode: "0755"
+
+- name: "Install | Tempo config file is set up"
+  ansible.builtin.template:
+    src: "config/{{ o11y__tempo_config_install.name }}.yaml.j2"
+    dest: "{{ o11y__tempo_config_install.compose_folder }}/config/{{ o11y__tempo_config_install.name }}.yaml"
+    owner: "{{ o11y__user_podman_install.name }}"
+
+- name:  "Install | Tempo compose is set up"
+  ansible.builtin.template:
+    src: "{{ o11y__tempo_config_install.name }}-compose.yml.j2"
+    dest: "{{ o11y__tempo_config_install.compose_folder }}/{{ o11y__tempo_config_install.name }}-compose.yml"
+    owner: "{{ o11y__user_podman_install.name }}"
+
+- name: "Install | Tempo compose is up"
+  ansible.builtin.shell: podman-compose -p {{ o11y__tempo_config_install.name }} -f {{ o11y__tempo_config_install.compose_folder }}/{{ o11y__tempo_config_install.name }}-compose.yml up -d --force-recreate
+  become_user: "{{ o11y__user_podman_install.name }}"

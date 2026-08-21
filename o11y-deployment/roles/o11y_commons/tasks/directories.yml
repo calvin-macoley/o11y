@@ -10,6 +10,8 @@
   loop:
     - "{{ o11y__grafana_config_commons.compose_folder }}"
     - "{{ o11y__mimir_config_commons.compose_folder }}"
+    - "{{ o11y__tempo_config_commons.compose_folder }}"
+    - "{{ o11y__loki_config_commons.compose_folder }}"
   loop_control:
     loop_var: directory
 
@@ -24,5 +26,7 @@
     - "{{ o11y__user_commons.home }}/data"
     - "{{ o11y__grafana_config_commons.data_folder }}"
     - "{{ o11y__mimir_config_commons.data_folder }}"
+    - "{{ o11y__tempo_config_commons.data_folder }}"
+    - "{{ o11y__loki_config_commons.data_folder }}"
   loop_control:
     loop_var: directory

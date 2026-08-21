@@ -1,5 +1,18 @@
 ---
 
+- name: "Install | Grafana config directory exists"
+  ansible.builtin.file:
+    path: "{{ o11y__grafana_config_install.compose_folder }}/config"
+    state: directory
+    owner: "{{ o11y__user_podman_install.name }}"
+    mode: "0755"
+
+- name: "Install | Grafana datasources are set up"
+  ansible.builtin.template:
+    src: "config/grafana-datasources.yaml.j2"
+    dest: "{{ o11y__grafana_config_install.compose_folder }}/config/grafana-datasources.yaml"
+    owner: "{{ o11y__user_podman_install.name }}"
+
 - name:  "Install | Grafana compose is set up"
   ansible.builtin.template:
     src: "{{ o11y__grafana_config_install.name }}-compose.yml.j2"
@@ -7,5 +20,5 @@
     owner: "{{ o11y__user_podman_install.name }}"
 
 - name: "Install | Grafana compose is up"
-  ansible.builtin.shell: podman-compose -f {{ o11y__grafana_config_install.compose_folder }}/{{ o11y__grafana_config_install.name }}-compose.yml up -d
+  ansible.builtin.shell: podman-compose -p {{ o11y__grafana_config_install.name }} -f {{ o11y__grafana_config_install.compose_folder }}/{{ o11y__grafana_config_install.name }}-compose.yml up -d --force-recreate
   become_user: "{{ o11y__user_podman_install.name }}"

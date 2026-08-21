@@ -1,0 +1,29 @@
+---
+
+- name: "Install | Loki config directory exists"
+  ansible.builtin.file:
+    path: "{{ o11y__loki_config_install.compose_folder }}/config"
+    state: directory
+    owner: "{{ o11y__user_podman_install.name }}"
+    mode: "0755"
+
+- name: "Install | Loki config files are set up"
+  ansible.builtin.template:
+    src: "config/{{ config_file }}.j2"
+    dest: "{{ o11y__loki_config_install.compose_folder }}/config/{{ config_file }}"
+    owner: "{{ o11y__user_podman_install.name }}"
+  loop:
+    - "{{ o11y__loki_config_install.name }}-config.yaml"
+    - "{{ o11y__loki_config_install.name }}-gateway.conf"
+  loop_control:
+    loop_var: config_file
+
+- name:  "Install | Loki compose is set up"
+  ansible.builtin.template:
+    src: "{{ o11y__loki_config_install.name }}-compose.yml.j2"
+    dest: "{{ o11y__loki_config_install.compose_folder }}/{{ o11y__loki_config_install.name }}-compose.yml"
+    owner: "{{ o11y__user_podman_install.name }}"
+
+- name: "Install | Loki compose is up"
+  ansible.builtin.shell: podman-compose -p {{ o11y__loki_config_install.name }} -f {{ o11y__loki_config_install.compose_folder }}/{{ o11y__loki_config_install.name }}-compose.yml up -d --force-recreate
+  become_user: "{{ o11y__user_podman_install.name }}"

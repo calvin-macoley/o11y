@@ -6,3 +6,5 @@ o11y__user_commons: "{{ o11y__user }}"
 
 o11y__grafana_config_commons: "{{ grafana__config }}"
 o11y__mimir_config_commons: "{{ mimir__config }}"
+o11y__tempo_config_commons: "{{ tempo__config }}"
+o11y__loki_config_commons: "{{ loki__config }}"
