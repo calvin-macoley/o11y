@@ -1,0 +1,64 @@
+# Do not use this configuration in production.
+# It is for demonstration purposes only.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  log_level: info
+  grpc_server_max_concurrent_streams: 1000
+
+common:
+  path_prefix: /loki
+  replication_factor: 1
+  compactor_address: http://backend:3100
+  storage:
+    s3:
+      endpoint: {{ o11y__minio_config_install.name }}:9000
+      insecure: true
+      bucketnames: {{ o11y__loki_config_install.name }}-data
+      access_key_id: {{ o11y__loki_config_install.name }}
+      secret_access_key: supersecret
+      s3forcepathstyle: true
+
+# same aardvark-dns startup race as Mimir: keep retrying the join
+memberlist:
+  rejoin_interval: 30s
+  join_members:
+    - read
+    - write
+    - backend
+
+schema_config:
+  configs:
+    - from: 2020-05-15
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+# pattern ingester backs the "Patterns" tab of Grafana Logs Drilldown
+pattern_ingester:
+  enabled: true
+
+limits_config:
+  metric_aggregation_enabled: true
+  volume_enabled: true
+
+compactor:
+  working_directory: /loki/compactor
+  delete_request_store: s3
+
+ruler_storage:
+  backend: local
+  local:
+    directory: /loki/rules

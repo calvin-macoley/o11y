@@ -13,3 +13,4 @@ services:
     # adding the mount volume point which we create earlier
     volumes:
       - '{{ o11y__grafana_config_install.data_folder }}:{{ o11y__grafana_config_install.volume_path }}'
+      - './config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml'

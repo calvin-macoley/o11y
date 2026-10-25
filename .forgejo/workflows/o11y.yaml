@@ -1,0 +1,118 @@
+---
+
+name: Install o11y stack
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+          description: 'What to deploy'
+          required: true
+          default: "full-install"
+          type: choice
+          options:
+          - iac+full-install
+          - full-install
+          - commons
+          - install
+      verbosity:
+          description: 'Choose the verbosity'
+          required: false
+          default : "-vv"
+          type: choice
+          options:
+          - -vv
+          - -vvv
+          - -vvvv
+
+jobs:
+  IaC:
+    if: inputs.target == 'iac+full-install'
+    runs-on: self-hosted
+    container:
+      image: 192.168.1.79:3000/calvin/tofu-runner:1.10.7
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/IaC
+    env:
+      SSH_AUTH_SOCK: /tmp/ssh_auth_sock
+      TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_API_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.GARAGE_TFSTATE_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.GARAGE_TFSTATE_SECRET_KEY }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # Same agent serves the gitlab module clone and the provider's ssh to Proxmox
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh ssh_keys
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null || { echo "SSH_PRIVATE_KEY secret is not a valid private key"; exit 1; }
+          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+          echo "${{ secrets.SSH_PUB_KEY }}" > ssh_keys/tofu-proxmox.pub
+          ssh-agent -a "$SSH_AUTH_SOCK"
+          ssh-add ~/.ssh/id_rsa
+
+      - name: Tofu init
+        run: tofu init
+
+      - name: Tofu format
+        run: tofu fmt -check
+
+      - name: Tofu validate
+        run: tofu validate
+
+      - name: Tofu plan
+        run: tofu plan -out=tfplan
+
+      - name: Tofu apply
+        run: tofu apply -auto-approve tfplan
+
+  Deploy:
+    needs: IaC
+    # Runs after a successful IaC job, or alone when IaC was skipped
+    if: always() && (needs.IaC.result == 'success' || needs.IaC.result == 'skipped')
+    runs-on: self-hosted
+    container:
+      image: 192.168.1.79:3000/calvin/ansible-image:latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/o11y-deployment
+    env:
+      SSH_AUTH_SOCK: /tmp/ssh_auth_sock
+      BAO_ADDR: ${{ vars.BAO_ADDR }}
+      BAO_TOKEN: ${{ secrets.BAO_TOKEN }}
+      BAO_CACERT: ${{ github.workspace }}/bao-ca.pem
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # gitlab key is only needed for the git collection in requirements.yml;
+      # the host key (~/.ssh/o11y) is throwaway and gets signed by OpenBao
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null || { echo "SSH_PRIVATE_KEY secret is not a valid private key"; exit 1; }
+          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+          ssh-agent -a "$SSH_AUTH_SOCK"
+          ssh-add ~/.ssh/id_rsa
+          echo "${{ secrets.BAO_CACERT }}" > "$BAO_CACERT"
+
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run ansible playbook
+        run: |
+          case "${{ inputs.target }}" in
+            iac+full-install|full-install) playbook=o11y-full-install.yml ;;
+            commons)                       playbook=o11y-commons.yml ;;
+            install)                       playbook=o11y-install.yml ;;
+          esac
+          ansible-playbook "$playbook" -e ssh_client_cert__generate_key=true ${{ inputs.verbosity }}

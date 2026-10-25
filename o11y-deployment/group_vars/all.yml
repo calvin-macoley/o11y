@@ -41,3 +41,27 @@ nginx__config:
   container_port: "9009"
   data_folder: "{{ o11y__user.home }}/data/nginx"
   volume_path: "/etc/nginx"
+
+tempo__config:
+  name: "tempo"
+  # pinned below GOAMD64=v2 (grafana/tempo Makefile, PR #4755, 2025-02-27):
+  # this host's CPU (QEMU "Virtual CPU version 2.5+") lacks the SSE4.2/POPCNT
+  # baseline that tempo/tempo-vulture >=2.8 require and crash on at startup.
+  tag: "2.7.2"
+  image_url: "docker.io/grafana/tempo:2.7.2"
+  compose_folder: "{{ o11y__user.home }}/compose_files"
+  data_folder: "{{ o11y__user.home }}/data/tempo"
+  volume_path: "/var/tempo"
+  container_port: "3200"
+  otlp_grpc_port: "4317"
+  otlp_http_port: "4318"
+
+loki__config:
+  name: "loki"
+  tag: "3.3.2"
+  image_url: "docker.io/grafana/loki:3.3.2"
+  compose_folder: "{{ o11y__user.home }}/compose_files"
+  data_folder: "{{ o11y__user.home }}/data/loki"
+  gateway_port: "3100"
+  read_port: "3101"
+  write_port: "3102"

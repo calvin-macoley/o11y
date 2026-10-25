@@ -21,7 +21,12 @@ blocks_storage:
     dir: {{ o11y__mimir_config_install.volume_path }}/ingester
 
 # Use memberlist, a gossip-based protocol, to enable the 3 Mimir replicas to communicate
+# aardvark-dns is often not answering yet when the replicas boot, so the
+# initial join can fail and leave each replica alone in its own ring
+# ("too many unhealthy instances in the ring"). Periodically rejoining lets
+# them find each other once DNS is up.
 memberlist:
+  rejoin_interval: 30s
   join_members: [{{ o11y__mimir_config_install.name }}-1, {{ o11y__mimir_config_install.name }}-2, {{ o11y__mimir_config_install.name }}-3]
 
 ruler:
@@ -36,6 +41,13 @@ alertmanager:
   data_dir: {{ o11y__mimir_config_install.volume_path }}/alertmanager
   fallback_config_file: /etc/alertmanager-fallback-config.yaml
   external_url: http://localhost:{{ o11y__nginx_config_install.container_port }}/alertmanager
+
+# The default 10k samples/s per tenant is too low for the asgard Prometheus
+# catching up on its remote-write backlog: pushes get 429'd, Prometheus backs
+# off, and live samples queue behind the backlog (dashboards show "No data").
+limits:
+  ingestion_rate: 100000
+  ingestion_burst_size: 1000000
 
 server:
   log_level: warn

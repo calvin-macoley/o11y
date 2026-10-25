@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: Tempo
+    type: tempo
+    access: proxy
+    # Tempo lives in its own podman-compose project/network, so it's reached
+    # through its host-published port via podman's host-gateway alias.
+    url: http://host.containers.internal:{{ o11y__tempo_config_install.container_port }}
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://host.containers.internal:{{ o11y__loki_config_install.gateway_port }}

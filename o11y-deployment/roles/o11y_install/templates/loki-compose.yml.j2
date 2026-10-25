@@ -1,0 +1,121 @@
+---
+networks:
+  {{ o11y__loki_config_install.name }}:
+
+services:
+  read:
+    image: {{ o11y__loki_config_install.image_url }}
+    command: "-config.file=/etc/{{ o11y__loki_config_install.name }}/config.yaml -target=read -query-scheduler.use-scheduler-ring=false"
+    ports:
+      - "{{ o11y__loki_config_install.read_port }}:3100"
+      - 7946
+      - 9095
+    volumes:
+      - ./config/{{ o11y__loki_config_install.name }}-config.yaml:/etc/{{ o11y__loki_config_install.name }}/config.yaml
+    depends_on:
+      - minio
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:3100/ready" ]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      {{ o11y__loki_config_install.name }}:
+        aliases:
+          - read
+
+  write:
+    image: {{ o11y__loki_config_install.image_url }}
+    command: "-config.file=/etc/{{ o11y__loki_config_install.name }}/config.yaml -target=write"
+    ports:
+      - "{{ o11y__loki_config_install.write_port }}:3100"
+      - 7946
+      - 9095
+    volumes:
+      - ./config/{{ o11y__loki_config_install.name }}-config.yaml:/etc/{{ o11y__loki_config_install.name }}/config.yaml
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:3100/ready" ]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - minio
+    # must not share the "read" alias: nginx would then round-robin read
+    # traffic onto this target, which 404s every query route
+    networks:
+      {{ o11y__loki_config_install.name }}:
+        aliases:
+          - write
+
+  backend:
+    image: {{ o11y__loki_config_install.image_url }}
+    command: "-config.file=/etc/{{ o11y__loki_config_install.name }}/config.yaml -target=backend -legacy-read-mode=false"
+    volumes:
+      - ./config/{{ o11y__loki_config_install.name }}-config.yaml:/etc/{{ o11y__loki_config_install.name }}/config.yaml
+    ports:
+      - "3100"
+      - "7946"
+    depends_on:
+      - minio
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:3100/ready" ]
+      start_period: 30s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - {{ o11y__loki_config_install.name }}
+
+  minio:
+    image: {{ o11y__minio_config_install.image_url }}
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /data/{{ o11y__loki_config_install.name }}-data && \
+        mkdir -p /data/{{ o11y__loki_config_install.name }}-ruler && \
+        minio server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER={{ o11y__loki_config_install.name }}
+      - MINIO_ROOT_PASSWORD=supersecret
+      - MINIO_PROMETHEUS_AUTH_TYPE=public
+      - MINIO_UPDATE=off
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 15s
+      timeout: 20s
+      retries: 5
+    networks:
+      - {{ o11y__loki_config_install.name }}
+
+  gateway:
+    image: {{ o11y__nginx_config_install.image_url }}
+    # nginx resolves proxy_pass hostnames once at worker startup and caches
+    # them; if it starts before read/write/backend are registered on the
+    # network, it needs a manual `podman restart loki_gateway_1` afterward
+    # (condition:service_healthy depends_on was tried here but hung under
+    # this host's podman-compose, so plain ordering is used instead, plus a
+    # restart policy so it retries until the hostnames resolve)
+    restart: on-failure
+    depends_on:
+      - read
+      - write
+      - backend
+    volumes:
+      - ./config/{{ o11y__loki_config_install.name }}-gateway.conf:/etc/nginx/nginx.conf
+    ports:
+      - "{{ o11y__loki_config_install.gateway_port }}:3100"
+    healthcheck:
+      test: ["CMD", "service", "nginx", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - {{ o11y__loki_config_install.name }}
+
+volumes:
+  minio-data:
