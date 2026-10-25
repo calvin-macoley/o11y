@@ -1,2 +1,5 @@
 collections:
-  - name: daemen.podman
+  - name: deamen.podman
+  - name: git@gitlab.com:homelab2522921/ansible-modules/ansible-openbao.git
+    type: git
+    version: v0.1.0

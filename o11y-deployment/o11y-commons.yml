@@ -1,5 +1,7 @@
 ---
 
+- import_playbook: ssh-cert.yml
+
 - name:  The release commons are installed
   hosts: all
   become: true
@@ -13,3 +15,7 @@
         - utilities
         - users
         - directories
+
+    - name:  Hosts trust the OpenBao SSH CA
+      ansible.builtin.include_role:
+        name:  calvin.openbao.ssh_ca_trust

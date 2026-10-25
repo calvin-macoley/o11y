@@ -1,0 +1,9 @@
+---
+
+# Gets (or reuses) the short-lived OpenBao SSH cert for ~/.ssh/o11y.
+# Imported first by the other playbooks: it must run before any play connects.
+- name:  The SSH certificate is valid
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - calvin.openbao.ssh_client_cert

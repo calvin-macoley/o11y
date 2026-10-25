@@ -21,7 +21,9 @@ common:
       secret_access_key: supersecret
       s3forcepathstyle: true
 
+# same aardvark-dns startup race as Mimir: keep retrying the join
 memberlist:
+  rejoin_interval: 30s
   join_members:
     - read
     - write
@@ -43,6 +45,10 @@ query_range:
       embedded_cache:
         enabled: true
         max_size_mb: 100
+
+# pattern ingester backs the "Patterns" tab of Grafana Logs Drilldown
+pattern_ingester:
+  enabled: true
 
 limits_config:
   metric_aggregation_enabled: true

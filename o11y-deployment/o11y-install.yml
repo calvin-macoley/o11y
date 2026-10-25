@@ -1,5 +1,7 @@
 ---
 
+- import_playbook: ssh-cert.yml
+
 - name:  Mimir and Grafana are installed
   hosts: all
   become: true
@@ -11,6 +13,7 @@
         o11y_install__actions: "{{ item }}"
       loop:
         - podman
+        - cleanup
         - mimir
         #- clickhouse
         - tempo

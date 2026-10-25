@@ -12,6 +12,7 @@ services:
 
   {{ o11y__mimir_config_install.name }}-1:
     image: {{ o11y__mimir_config_install.image_url }}
+    restart: on-failure
     command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
     hostname: {{ o11y__mimir_config_install.name }}-1
     volumes:
@@ -21,6 +22,7 @@ services:
 
   {{ o11y__mimir_config_install.name }}-2:
     image: {{ o11y__mimir_config_install.image_url }}
+    restart: on-failure
     command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
     hostname: {{ o11y__mimir_config_install.name }}-2
     volumes:
@@ -30,6 +32,7 @@ services:
 
   {{ o11y__mimir_config_install.name }}-3:
     image: {{ o11y__mimir_config_install.image_url }}
+    restart: on-failure
     command: ["-config.file=/etc/{{ o11y__mimir_config_install.name }}.yaml"]
     hostname: {{ o11y__mimir_config_install.name }}-3
     volumes:
@@ -39,6 +42,9 @@ services:
 
   {{ o11y__nginx_config_install.name }}:
     image: {{ o11y__nginx_config_install.image_url }}
+    # nginx exits with "host not found in upstream" if it starts before the
+    # mimir replicas are resolvable; restart until DNS has them
+    restart: on-failure
     volumes:
       - ./config/nginx.conf:{{ o11y__nginx_config_install.volume_path }}/nginx.conf:ro
     ports:

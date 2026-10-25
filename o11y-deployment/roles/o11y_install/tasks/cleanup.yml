@@ -1,0 +1,20 @@
+---
+
+# Removes every container (and the pods podman-compose may have created) owned
+# by the o11y user so each install starts from a clean slate. Named volumes are
+# kept, so stored metrics/logs/traces survive a reinstall.
+- name: "Install | All o11y pods are removed"
+  ansible.builtin.command:
+    cmd: "podman pod rm --all --force"
+  become: true
+  become_user: "{{ o11y__user_podman_install.name }}"
+  register: o11y_install__pods_removed
+  changed_when: o11y_install__pods_removed.stdout | length > 0
+
+- name: "Install | All o11y containers are removed"
+  ansible.builtin.command:
+    cmd: "podman rm --all --force"
+  become: true
+  become_user: "{{ o11y__user_podman_install.name }}"
+  register: o11y_install__containers_removed
+  changed_when: o11y_install__containers_removed.stdout | length > 0

@@ -46,3 +46,7 @@ override.tofu.json
 .terraformrc
 terraform.rc
 ssh_keys
+
+# ---> SSH keys / OpenBao-signed certs (never commit)
+secret/
+*-cert.pub

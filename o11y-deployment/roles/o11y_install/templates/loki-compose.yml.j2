@@ -20,7 +20,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks: &loki-dns
+    networks:
       {{ o11y__loki_config_install.name }}:
         aliases:
           - read
@@ -42,8 +42,12 @@ services:
       retries: 5
     depends_on:
       - minio
+    # must not share the "read" alias: nginx would then round-robin read
+    # traffic onto this target, which 404s every query route
     networks:
-      <<: *loki-dns
+      {{ o11y__loki_config_install.name }}:
+        aliases:
+          - write
 
   backend:
     image: {{ o11y__loki_config_install.image_url }}
@@ -94,7 +98,9 @@ services:
     # them; if it starts before read/write/backend are registered on the
     # network, it needs a manual `podman restart loki_gateway_1` afterward
     # (condition:service_healthy depends_on was tried here but hung under
-    # this host's podman-compose, so plain ordering is used instead)
+    # this host's podman-compose, so plain ordering is used instead, plus a
+    # restart policy so it retries until the hostnames resolve)
+    restart: on-failure
     depends_on:
       - read
       - write

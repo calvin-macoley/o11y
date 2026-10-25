@@ -111,7 +111,8 @@ containers under a dedicated `o11y` user, orchestrated with `podman-compose`.
 |---|---|
 | `o11y-deployment/inventory/hosts` | Target hosts (the `o11y` VM at `192.168.1.8`) |
 | `o11y-deployment/group_vars/all.yml` | Per-service config (image, tag, ports, data/compose folders) |
-| `o11y-deployment/o11y-commons.yml` | Playbook: base setup (utilities, `o11y` user, directories) |
+| `o11y-deployment/ssh-cert.yml` | Playbook: gets the OpenBao SSH cert; imported first by the other playbooks |
+| `o11y-deployment/o11y-commons.yml` | Playbook: base setup (utilities, `o11y` user, directories, SSH CA trust) |
 | `o11y-deployment/o11y-install.yml` | Playbook: install Podman, Mimir and Grafana |
 | `o11y-deployment/o11y-full-install.yml` | Playbook: runs commons then install, end to end |
 | `o11y-deployment/roles/o11y_commons/` | Role: creates the `o11y` user and compose/data directories |
@@ -124,15 +125,39 @@ files (e.g. `utilities` → `users` → `directories`, then `podman` → `mimir`
 ### Prerequisites
 
 - [Ansible](https://www.ansible.com/) installed on the control machine
-- The `daemen.podman` collection: `ansible-galaxy collection install -r requirements.yml`
+- The `deamen.podman` and [`calvin.openbao`](https://gitlab.com/homelab2522921/ansible-modules/ansible-openbao)
+  collections: `ansible-galaxy collection install -r requirements.yml`
 - SSH access to the target VM as the `ansible` user, with the private key at
-  `o11y-deployment/secrets/o11y` (referenced from the inventory)
+  `~/.ssh/o11y` (outside the repo; set via `private_key_file` in `ansible.cfg`)
+
+### SSH certificates (OpenBao)
+
+Logins use a short-lived (30 min) SSH certificate signed by OpenBao's
+`ssh-client-signer` engine (role `ansible`). Every playbook first imports
+`ssh-cert.yml`, which runs `calvin.openbao.ssh_client_cert` on the control node:
+it reuses `~/.ssh/o11y-cert.pub` while it is valid for 5 more minutes, otherwise
+asks OpenBao for a new one. ssh picks the cert up automatically next to `~/.ssh/o11y`.
+
+```sh
+export BAO_TOKEN=<your token>           # never commit it; only needed to renew
+# export BAO_ADDR=https://192.168.1.4:8200  # default
+# export BAO_CACERT=~/.config/openbao/ca.pem # default: pinned self-signed OpenBao cert
+```
+
+OpenBao's TLS cert is self-signed, so it is pinned in `~/.config/openbao/ca.pem`
+(outside the repo) instead of disabling verification. `o11y-commons.yml` makes
+hosts trust the CA (`calvin.openbao.ssh_ca_trust`). New hosts must trust the CA once
+(`ansible-playbook o11y-commons.yml`); plain key login keeps working as a fallback.
+
+For the CI token (policy and how to create/renew it), see
+[OPENBAO-CI-TOKEN.md](OPENBAO-CI-TOKEN.md).
 
 ### Usage
 
 ```sh
 cd o11y-deployment
 ansible-galaxy collection install -r requirements.yml
+export BAO_TOKEN=<your token>
 ansible-playbook o11y-full-install.yml
 ```
 
