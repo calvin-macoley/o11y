@@ -1,11 +1,4 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # vars file for roles/o11y_install
-o11y__user_podman_install: "{{ o11y__user }}"
 
-o11y__grafana_config_install: "{{ grafana__config }}"
-o11y__mimir_config_install: "{{ mimir__config }}"
-o11y__minio_config_install: "{{ minio__config }}"
-o11y__nginx_config_install: "{{ nginx__config }}"
-o11y__tempo_config_install: "{{ tempo__config }}"
-o11y__loki_config_install: "{{ loki__config }}"
